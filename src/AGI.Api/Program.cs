@@ -28,10 +28,9 @@ app.MapPost("/v1/chat/completions", async (HttpContext context, JsonElement body
         messages = body.TryGetProperty("messages", out var msgs) ? msgs : default
     }));
 
-    var content = await pending.Completion.Task;
-
     if (!stream)
     {
+        var content = await pending.Completion.Task;
         return Results.Ok(new
         {
             id,
@@ -54,10 +53,42 @@ app.MapPost("/v1/chat/completions", async (HttpContext context, JsonElement body
     context.Response.Headers["Cache-Control"] = "no-cache";
     context.Response.Headers["Connection"] = "keep-alive";
 
-    var writer = context.Response.BodyWriter;
     var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    foreach (var ch in content)
+    using var cts = new CancellationTokenSource();
+    var heartbeatTask = Task.Run(async () =>
+    {
+        while (!cts.Token.IsCancellationRequested)
+        {
+            await Task.Delay(1000, cts.Token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (cts.Token.IsCancellationRequested) break;
+            var heartbeat = new
+            {
+                id,
+                @object = "chat.completion.chunk",
+                created,
+                model,
+                choices = new[]
+                {
+                    new
+                    {
+                        index = 0,
+                        delta = new { content = (string?)null },
+                        finish_reason = (string?)null
+                    }
+                }
+            };
+            var hbJson = JsonSerializer.Serialize(heartbeat, jsonOptions);
+            await context.Response.WriteAsync($"data: {hbJson}\n\n");
+            await context.Response.Body.FlushAsync();
+        }
+    });
+
+    var streamContent = await pending.Completion.Task;
+    cts.Cancel();
+    await heartbeatTask;
+
+    foreach (var ch in streamContent)
     {
         var chunk = new
         {
