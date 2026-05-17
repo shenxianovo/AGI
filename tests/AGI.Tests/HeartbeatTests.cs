@@ -1,16 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AGI.Tests;
 
-public class HeartbeatTests : IClassFixture<WebApplicationFactory<Program>>
+public class HeartbeatTests : IClassFixture<TestWebAppFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebAppFactory _factory;
 
-    public HeartbeatTests(WebApplicationFactory<Program> factory)
+    public HeartbeatTests(TestWebAppFactory factory)
     {
         _factory = factory;
     }

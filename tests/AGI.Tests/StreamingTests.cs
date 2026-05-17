@@ -2,16 +2,15 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AGI.Tests;
 
-public class StreamingTests : IClassFixture<WebApplicationFactory<Program>>
+public class StreamingTests : IClassFixture<TestWebAppFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebAppFactory _factory;
 
-    public StreamingTests(WebApplicationFactory<Program> factory)
+    public StreamingTests(TestWebAppFactory factory)
     {
         _factory = factory;
     }

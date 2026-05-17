@@ -9,7 +9,7 @@ public static class ChatCompletionsEndpoint
 {
     public static void Map(WebApplication app)
     {
-        app.MapPost("/v1/chat/completions", HandleAsync);
+        app.MapPost("/v1/chat/completions", HandleAsync).RequireAuthorization();
     }
 
     private static async Task<IResult> HandleAsync(

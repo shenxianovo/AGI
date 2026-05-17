@@ -1,16 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AGI.Tests;
 
-public class RequestQueueTests : IClassFixture<WebApplicationFactory<Program>>
+public class RequestQueueTests : IClassFixture<TestWebAppFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebAppFactory _factory;
 
-    public RequestQueueTests(WebApplicationFactory<Program> factory)
+    public RequestQueueTests(TestWebAppFactory factory)
     {
         _factory = factory;
     }
