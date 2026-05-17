@@ -34,7 +34,34 @@ public static class ChatCompletionsEndpoint
 
         if (!stream)
         {
-            var content = await pending.Completion.Task;
+            var reply = await pending.Completion.Task;
+
+            if (reply.IsToolCall)
+            {
+                var toolCalls = JsonSerializer.Deserialize<JsonElement>(reply.ToolCallsJson!);
+                return Results.Ok(new
+                {
+                    id,
+                    @object = "chat.completion",
+                    created,
+                    model,
+                    choices = new[]
+                    {
+                        new
+                        {
+                            index = 0,
+                            message = new
+                            {
+                                role = "assistant",
+                                content = (string?)null,
+                                tool_calls = toolCalls.GetProperty("tool_calls")
+                            },
+                            finish_reason = "tool_calls"
+                        }
+                    }
+                });
+            }
+
             return Results.Ok(new
             {
                 id,
@@ -46,7 +73,7 @@ public static class ChatCompletionsEndpoint
                     new
                     {
                         index = 0,
-                        message = new { role = "assistant", content },
+                        message = new { role = "assistant", content = reply.Content, tool_calls = (JsonElement?)null },
                         finish_reason = "stop"
                     }
                 }
@@ -98,9 +125,11 @@ public static class ChatCompletionsEndpoint
             }
         });
 
-        var streamContent = await pending.Completion.Task;
+        var reply = await pending.Completion.Task;
         cts.Cancel();
         await heartbeatTask;
+
+        var streamContent = reply.Content ?? "";
 
         foreach (var ch in streamContent)
         {

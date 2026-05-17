@@ -29,7 +29,7 @@ public static class AnthropicMessagesEndpoint
             messages = body.TryGetProperty("messages", out var msgs) ? msgs : default
         }));
 
-        var content = await pending.Completion.Task;
+        var reply = await pending.Completion.Task;
 
         var inputText = "";
         if (body.TryGetProperty("messages", out var messages))
@@ -41,6 +41,8 @@ public static class AnthropicMessagesEndpoint
             }
         }
 
+        var replyContent = reply.Content ?? "";
+
         return Results.Ok(new
         {
             id,
@@ -49,14 +51,14 @@ public static class AnthropicMessagesEndpoint
             model,
             content = new[]
             {
-                new { type = "text", text = content }
+                new { type = "text", text = replyContent }
             },
             stop_reason = "end_turn",
             stop_sequence = (string?)null,
             usage = new
             {
                 input_tokens = inputText.Length,
-                output_tokens = content.Length
+                output_tokens = replyContent.Length
             }
         });
     }

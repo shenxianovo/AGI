@@ -27,11 +27,18 @@ public class RequestQueue
     public IEnumerable<PendingRequest> GetAll() => _pending.Values;
 }
 
+public class OperatorReply
+{
+    public string? Content { get; init; }
+    public string? ToolCallsJson { get; init; }
+    public bool IsToolCall => ToolCallsJson != null;
+}
+
 public class PendingRequest
 {
     public string Id { get; }
     public object RequestData { get; }
-    public TaskCompletionSource<string> Completion { get; } = new();
+    public TaskCompletionSource<OperatorReply> Completion { get; } = new();
 
     public PendingRequest(string id, object requestData)
     {
