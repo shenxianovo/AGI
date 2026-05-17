@@ -2,31 +2,46 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AGI.Tests;
 
 public class ChatCompletionsTests : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client;
+    private readonly WebApplicationFactory<Program> _factory;
 
     public ChatCompletionsTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory.CreateClient();
+        _factory = factory;
     }
 
     [Fact]
     public async Task PostChatCompletions_ReturnsValidOpenAIFormat()
     {
-        var request = new
+        var server = _factory.Server;
+        var client = _factory.CreateClient();
+
+        var hubConnection = new HubConnectionBuilder()
+            .WithUrl(
+                new Uri(server.BaseAddress, "/hubs/operator"),
+                opts => opts.HttpMessageHandlerFactory = _ => server.CreateHandler())
+            .Build();
+
+        hubConnection.On<JsonElement>("NewRequest", async request =>
+        {
+            var id = request.GetProperty("id").GetString();
+            await hubConnection.InvokeAsync("Reply", id, "Hello back!");
+        });
+
+        await hubConnection.StartAsync();
+
+        var requestBody = new
         {
             model = "quq-1.0",
-            messages = new[]
-            {
-                new { role = "user", content = "Hello" }
-            }
+            messages = new[] { new { role = "user", content = "Hello" } }
         };
 
-        var response = await _client.PostAsJsonAsync("/v1/chat/completions", request);
+        var response = await client.PostAsJsonAsync("/v1/chat/completions", requestBody);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -46,6 +61,8 @@ public class ChatCompletionsTests : IClassFixture<WebApplicationFactory<Program>
 
         var message = choice.GetProperty("message");
         Assert.Equal("assistant", message.GetProperty("role").GetString());
-        Assert.True(message.TryGetProperty("content", out _));
+        Assert.Equal("Hello back!", message.GetProperty("content").GetString());
+
+        await hubConnection.DisposeAsync();
     }
 }
