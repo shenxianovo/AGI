@@ -24,6 +24,7 @@ app.UseAuthorization();
 
 app.MapHub<OperatorHub>("/hubs/operator");
 ChatCompletionsEndpoint.Map(app);
+AnthropicMessagesEndpoint.Map(app);
 
 app.Run();
 
