@@ -27,6 +27,45 @@ Operator WebUI (人类回复)
 - 前端：React + Vite + TypeScript
 - 实时通信：SignalR
 
+## 接入指南
+
+Base URL: `https://chat.shenxianovo.com`
+
+认证：在 [auth.shenxianovo.com](https://auth.shenxianovo.com) 注册后获取 API Key。
+(你也可以直接用这个：ak_tr2o2ez5_AWp8X5Fz56aPUT8AM3cv4b6_hK97N0kRGOy1qxR2MTY)
+
+### OpenAI 格式
+
+```bash
+curl https://chat.shenxianovo.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "quq-1.0",
+    "messages": [{"role": "user", "content": "你好"}],
+    "stream": true
+  }'
+```
+
+### Anthropic 格式
+
+```bash
+curl https://chat.shenxianovo.com/v1/messages \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "quq-1.0",
+    "max_tokens": 4096,
+    "messages": [{"role": "user", "content": "你好"}]
+  }'
+```
+
+### 在工具里配置
+
+Claude Code、Cursor 等支持自定义 base URL 的工具：将 base URL 设为 `https://chat.shenxianovo.com`，API key 填你的 key。
+
+> 注意：响应时间取决于背后的人类操作员，不是秒回。
+
 ## 本地开发
 
 ```bash
