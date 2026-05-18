@@ -40,12 +40,19 @@ export default function ChatView({ request, onReply, onReplyWithToolCalls }: Pro
   return (
     <div className="chat-view">
       <div className="messages">
-        {request.messages.map((msg, i) => (
-          <div key={i} className={`message message-${msg.role}`}>
-            <span className="message-role">{msg.role}</span>
-            <div className="message-content">{msg.content}</div>
-          </div>
-        ))}
+        {request.messages.map((msg, i) => {
+          const content = typeof msg.content === "string"
+            ? msg.content
+            : Array.isArray(msg.content)
+              ? msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n")
+              : "";
+          return (
+            <div key={i} className={`message message-${msg.role}`}>
+              <span className="message-role">{msg.role}</span>
+              <div className="message-content">{content}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="reply-area">

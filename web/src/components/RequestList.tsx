@@ -15,7 +15,12 @@ export default function RequestList({ requests, activeId, onSelect }: Props) {
     <ul className="request-list">
       {requests.map((req) => {
         const lastMessage = req.messages[req.messages.length - 1];
-        const preview = lastMessage?.content?.slice(0, 50) ?? "";
+        const content = lastMessage?.content;
+        const preview = typeof content === "string"
+          ? content.slice(0, 50)
+          : Array.isArray(content)
+            ? content.filter((b) => b.type === "text").map((b) => b.text).join("").slice(0, 50)
+            : "";
         return (
           <li
             key={req.id}
