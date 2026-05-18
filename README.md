@@ -31,8 +31,8 @@ Operator WebUI (人类回复)
 
 Base URL: `https://chat.shenxianovo.com`
 
-认证：在 [auth.shenxianovo.com](https://auth.shenxianovo.com) 注册后获取 API Key。
-(你也可以直接用这个：ak_tr2o2ez5_AWp8X5Fz56aPUT8AM3cv4b6_hK97N0kRGOy1qxR2MTY)
+认证：在 [auth.shenxianovo.com](https://auth.shenxianovo.com) 注册后获取 API Key。  
+你也可以直接用这个：ak_tr2o2ez5_AWp8X5Fz56aPUT8AM3cv4b6_hK97N0kRGOy1qxR2MTY
 
 ### OpenAI 格式
 
