@@ -1,0 +1,15 @@
+[Unit]
+Description=AGI - Actual Guy Inside
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/agi/current
+ExecStart=/usr/bin/dotnet /srv/agi/current/AGI.Api.dll --urls http://0.0.0.0:5096
+Restart=on-failure
+RestartSec=10
+Environment=ASPNETCORE_ENVIRONMENT=Production
+SyslogIdentifier=agi
+User=shenxianovo
+
+[Install]
+WantedBy=multi-user.target

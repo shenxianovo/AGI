@@ -35,11 +35,15 @@ app.Use(async (context, next) =>
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapHub<OperatorHub>("/hubs/operator");
 ChatCompletionsEndpoint.Map(app);
 AnthropicMessagesEndpoint.Map(app);
 AsyncEndpoints.Map(app);
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
