@@ -1,6 +1,11 @@
+export interface ContentBlock {
+  type: string;
+  text?: string;
+}
+
 export interface Message {
   role: string;
-  content: string;
+  content: string | ContentBlock[];
 }
 
 export interface PendingRequest {
