@@ -1,29 +1,18 @@
+using AGI.Api.Auth;
 using AGI.Api.Endpoints;
 using AGI.Api.Hubs;
 using AGI.Api.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<RequestQueue>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("AuthService");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = null;
-        options.RequireHttpsMetadata = false;
-        options.TokenValidationParameters = new()
-        {
-            ValidateIssuer = true,
-            ValidIssuer = "AuthService",
-            ValidateAudience = true,
-            ValidAudience = "AuthService",
-            ValidateLifetime = true,
-        };
-        options.MetadataAddress = "https://auth.shenxianovo.com/.well-known/openid-configuration";
-    });
+builder.Services.AddAuthentication("ApiKey")
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
   {
@@ -35,6 +24,13 @@ builder.Services.AddCors(options =>
   });
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("RequestLog");
+    logger.LogInformation("{Method} {Path}", context.Request.Method, context.Request.Path);
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

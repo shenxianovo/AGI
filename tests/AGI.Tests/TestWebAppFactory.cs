@@ -12,14 +12,12 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
+        builder.UseSetting("AuthServiceUrl", "https://mock-auth.local");
+
         builder.ConfigureServices(services =>
         {
             services.AddAuthentication("Test")
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
-
-            services.PostConfigure<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>(
-                Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme,
-                opts => { });
 
             services.Configure<AuthenticationOptions>(opts =>
             {
