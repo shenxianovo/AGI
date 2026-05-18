@@ -7,11 +7,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/hubs": {
-        target: "http://localhost:5000",
+        target: "http://localhost:5096",
         ws: true,
       },
       "/v1": {
-        target: "http://localhost:5000",
+        target: "http://localhost:5096",
       },
     },
   },
