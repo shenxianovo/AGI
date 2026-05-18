@@ -18,7 +18,6 @@ public class OperatorHub : Hub
         if (pending != null)
         {
             pending.Completion.TrySetResult(new OperatorReply { Content = content });
-            _queue.Remove(requestId);
         }
     }
 
@@ -28,7 +27,6 @@ public class OperatorHub : Hub
         if (pending != null)
         {
             pending.Completion.TrySetResult(new OperatorReply { ToolCallsJson = toolCallsJson });
-            _queue.Remove(requestId);
         }
     }
 }

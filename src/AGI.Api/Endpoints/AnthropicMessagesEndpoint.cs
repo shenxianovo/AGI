@@ -30,6 +30,7 @@ public static class AnthropicMessagesEndpoint
         }));
 
         var reply = await pending.Completion.Task;
+        queue.Remove(id);
 
         var inputText = "";
         if (body.TryGetProperty("messages", out var messages))

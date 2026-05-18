@@ -35,6 +35,7 @@ public static class ChatCompletionsEndpoint
         if (!stream)
         {
             var reply = await pending.Completion.Task;
+            queue.Remove(id);
 
             if (reply.IsToolCall)
             {
@@ -80,7 +81,7 @@ public static class ChatCompletionsEndpoint
             });
         }
 
-        return await HandleStreamingAsync(context, pending, id, model, created);
+        return await HandleStreamingAsync(context, pending, id, model, created, queue);
     }
 
     private static async Task<IResult> HandleStreamingAsync(
@@ -88,7 +89,8 @@ public static class ChatCompletionsEndpoint
         PendingRequest pending,
         string id,
         string? model,
-        long created)
+        long created,
+        RequestQueue queue)
     {
         context.Response.ContentType = "text/event-stream";
         context.Response.Headers["Cache-Control"] = "no-cache";
@@ -126,6 +128,7 @@ public static class ChatCompletionsEndpoint
         });
 
         var reply = await pending.Completion.Task;
+        queue.Remove(id);
         cts.Cancel();
         await heartbeatTask;
 
