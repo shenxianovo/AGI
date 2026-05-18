@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <Target Name="PublishFrontend" BeforeTargets="Publish">
-    <Exec Command="npm ci" WorkingDirectory="../../web" />
+    <Exec Command="npm install" WorkingDirectory="../../web" />
     <Exec Command="npm run build" WorkingDirectory="../../web" />
     <ItemGroup>
       <DistFiles Include="../../web/dist/**/*" />
