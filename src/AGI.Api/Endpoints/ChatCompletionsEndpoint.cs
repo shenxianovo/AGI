@@ -16,7 +16,8 @@ public static class ChatCompletionsEndpoint
         HttpContext context,
         JsonElement body,
         RequestQueue queue,
-        IHubContext<OperatorHub> hubContext)
+        IHubContext<OperatorHub> hubContext,
+        StatsService stats)
     {
         var model = body.TryGetProperty("model", out var m) ? m.GetString() : "quq-1.0";
         var id = $"chatcmpl-{Guid.NewGuid():N}";
@@ -31,6 +32,8 @@ public static class ChatCompletionsEndpoint
             model,
             messages = body.TryGetProperty("messages", out var msgs) ? msgs : default
         }));
+
+        var inputTokens = EstimateInputTokens(body);
 
         if (!stream)
         {
@@ -49,6 +52,8 @@ public static class ChatCompletionsEndpoint
                         arguments = JsonSerializer.Serialize(tc.Arguments)
                     }
                 }).ToArray();
+
+                stats.RecordProcessedMessage(inputTokens, 0);
 
                 return Results.Ok(new
                 {
@@ -73,6 +78,9 @@ public static class ChatCompletionsEndpoint
                 });
             }
 
+            var replyContent = reply.Content ?? "";
+            stats.RecordProcessedMessage(inputTokens, replyContent.Length);
+
             return Results.Ok(new
             {
                 id,
@@ -91,7 +99,7 @@ public static class ChatCompletionsEndpoint
             });
         }
 
-        return await HandleStreamingAsync(context, pending, id, model, created, queue);
+        return await HandleStreamingAsync(context, pending, id, model, created, queue, stats, inputTokens);
     }
 
     private static async Task<IResult> HandleStreamingAsync(
@@ -100,7 +108,9 @@ public static class ChatCompletionsEndpoint
         string id,
         string? model,
         long created,
-        RequestQueue queue)
+        RequestQueue queue,
+        StatsService stats,
+        int inputTokens)
     {
         context.Response.ContentType = "text/event-stream";
         context.Response.Headers["Cache-Control"] = "no-cache";
@@ -143,6 +153,7 @@ public static class ChatCompletionsEndpoint
         await heartbeatTask;
 
         var streamContent = reply.Content ?? "";
+        stats.RecordProcessedMessage(inputTokens, streamContent.Length);
 
         foreach (var ch in streamContent)
         {
@@ -189,5 +200,19 @@ public static class ChatCompletionsEndpoint
         await context.Response.Body.FlushAsync();
 
         return Results.Empty;
+    }
+
+    private static int EstimateInputTokens(JsonElement body)
+    {
+        var length = 0;
+        if (body.TryGetProperty("messages", out var messages))
+        {
+            foreach (var msg in messages.EnumerateArray())
+            {
+                if (msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String)
+                    length += c.GetString()?.Length ?? 0;
+            }
+        }
+        return length;
     }
 }

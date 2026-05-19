@@ -16,7 +16,8 @@ public static class AnthropicMessagesEndpoint
         HttpContext context,
         JsonElement body,
         RequestQueue queue,
-        IHubContext<OperatorHub> hubContext)
+        IHubContext<OperatorHub> hubContext,
+        StatsService stats)
     {
         var model = body.TryGetProperty("model", out var m) ? m.GetString() : "quq-1.0";
         var id = $"msg_{Guid.NewGuid():N}";
@@ -32,13 +33,13 @@ public static class AnthropicMessagesEndpoint
         }));
 
         if (!stream)
-            return await HandleNonStreamAsync(body, pending, queue, id, model);
+            return await HandleNonStreamAsync(body, pending, queue, id, model, stats);
 
-        return await HandleStreamAsync(context, pending, queue, id, model);
+        return await HandleStreamAsync(context, pending, queue, id, model, stats);
     }
 
     private static async Task<IResult> HandleNonStreamAsync(
-        JsonElement body, PendingRequest pending, RequestQueue queue, string id, string? model)
+        JsonElement body, PendingRequest pending, RequestQueue queue, string id, string? model, StatsService stats)
     {
         var reply = await pending.Completion.Task;
         queue.Remove(id);
@@ -55,6 +56,8 @@ public static class AnthropicMessagesEndpoint
                 input = tc.Arguments
             }).ToArray();
 
+            stats.RecordProcessedMessage(inputTokens, 0);
+
             return Results.Ok(new
             {
                 id,
@@ -69,6 +72,7 @@ public static class AnthropicMessagesEndpoint
         }
 
         var replyContent = reply.Content ?? "";
+        stats.RecordProcessedMessage(inputTokens, replyContent.Length);
 
         return Results.Ok(new
         {
@@ -84,7 +88,7 @@ public static class AnthropicMessagesEndpoint
     }
 
     private static async Task<IResult> HandleStreamAsync(
-        HttpContext context, PendingRequest pending, RequestQueue queue, string id, string? model)
+        HttpContext context, PendingRequest pending, RequestQueue queue, string id, string? model, StatsService stats)
     {
         context.Response.ContentType = "text/event-stream";
         context.Response.Headers["Cache-Control"] = "no-cache";
@@ -124,6 +128,8 @@ public static class AnthropicMessagesEndpoint
         cts.Cancel();
         await heartbeatTask;
 
+        var inputTokens = EstimateInputTokens((JsonElement)pending.RequestData);
+
         if (reply.IsToolCall)
         {
             var toolCall = reply.ToolCalls![0];
@@ -161,6 +167,8 @@ public static class AnthropicMessagesEndpoint
 
             await WriteEventAsync(context, "message_stop", new { type = "message_stop" }, jsonOpts);
 
+            stats.RecordProcessedMessage(inputTokens, 0);
+
             return Results.Empty;
         }
 
@@ -197,6 +205,8 @@ public static class AnthropicMessagesEndpoint
         }, jsonOpts);
 
         await WriteEventAsync(context, "message_stop", new { type = "message_stop" }, jsonOpts);
+
+        stats.RecordProcessedMessage(inputTokens, replyContent.Length);
 
         return Results.Empty;
     }

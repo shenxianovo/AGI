@@ -33,7 +33,7 @@ public static class AsyncEndpoints
         return Results.Accepted(value: new { task_id = id });
     }
 
-    private static IResult HandlePoll(string taskId, RequestQueue queue)
+    private static IResult HandlePoll(string taskId, RequestQueue queue, StatsService stats)
     {
         var pending = queue.Get(taskId);
 
@@ -52,8 +52,13 @@ public static class AsyncEndpoints
 
             var created = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var model = "quq-1.0";
-            if (pending.RequestData is JsonElement body && body.TryGetProperty("model", out var m))
-                model = m.GetString();
+            var inputTokens = 0;
+            if (pending.RequestData is JsonElement body)
+            {
+                if (body.TryGetProperty("model", out var m))
+                    model = m.GetString();
+                inputTokens = EstimateInputTokens(body);
+            }
 
             object result;
             if (reply.IsToolCall)
@@ -85,9 +90,12 @@ public static class AsyncEndpoints
                         }
                     }
                 };
+
+                stats.RecordProcessedMessage(inputTokens, 0);
             }
             else
             {
+                var replyContent = reply.Content ?? "";
                 result = new
                 {
                     id = taskId,
@@ -99,11 +107,13 @@ public static class AsyncEndpoints
                         new
                         {
                             index = 0,
-                            message = new { role = "assistant", content = reply.Content },
+                            message = new { role = "assistant", content = replyContent },
                             finish_reason = "stop"
                         }
                     }
                 };
+
+                stats.RecordProcessedMessage(inputTokens, replyContent.Length);
             }
 
             CompletedTasks.Store(taskId, result);
@@ -111,6 +121,20 @@ public static class AsyncEndpoints
         }
 
         return Results.Ok(new { status = "pending" });
+    }
+
+    private static int EstimateInputTokens(JsonElement body)
+    {
+        var length = 0;
+        if (body.TryGetProperty("messages", out var messages))
+        {
+            foreach (var msg in messages.EnumerateArray())
+            {
+                if (msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String)
+                    length += c.GetString()?.Length ?? 0;
+            }
+        }
+        return length;
     }
 }
 

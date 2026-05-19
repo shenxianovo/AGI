@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<RequestQueue>();
+builder.Services.AddSingleton<StatsService>();
+builder.Services.AddSingleton<OperatorPresence>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("AuthService");
 
@@ -42,6 +44,7 @@ app.MapHub<OperatorHub>("/hubs/operator");
 ChatCompletionsEndpoint.Map(app);
 AnthropicMessagesEndpoint.Map(app);
 AsyncEndpoints.Map(app);
+StatusEndpoint.Map(app);
 
 app.MapFallbackToFile("index.html");
 

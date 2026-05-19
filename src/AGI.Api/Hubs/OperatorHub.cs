@@ -7,10 +7,24 @@ namespace AGI.Api.Hubs;
 public class OperatorHub : Hub
 {
     private readonly RequestQueue _queue;
+    private readonly OperatorPresence _presence;
 
-    public OperatorHub(RequestQueue queue)
+    public OperatorHub(RequestQueue queue, OperatorPresence presence)
     {
         _queue = queue;
+        _presence = presence;
+    }
+
+    public override Task OnConnectedAsync()
+    {
+        _presence.OnConnected();
+        return base.OnConnectedAsync();
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        _presence.OnDisconnected();
+        return base.OnDisconnectedAsync(exception);
     }
 
     public void Reply(string requestId, string content)
@@ -40,4 +54,13 @@ public class OperatorHub : Hub
 
         pending.Completion.TrySetResult(new OperatorReply { ToolCalls = toolCalls });
     }
+}
+
+public class OperatorPresence
+{
+    private int _connectionCount = 0;
+
+    public void OnConnected() => Interlocked.Increment(ref _connectionCount);
+    public void OnDisconnected() => Interlocked.Decrement(ref _connectionCount);
+    public bool IsOnline => Interlocked.CompareExchange(ref _connectionCount, 0, 0) > 0;
 }
