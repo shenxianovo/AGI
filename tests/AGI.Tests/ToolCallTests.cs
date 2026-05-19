@@ -31,18 +31,13 @@ public class ToolCallTests : IClassFixture<TestWebAppFactory>
             var id = request.GetProperty("id").GetString();
             var toolCall = new
             {
-                type = "tool_calls",
                 tool_calls = new[]
                 {
                     new
                     {
                         id = "call_123",
-                        type = "function",
-                        function = new
-                        {
-                            name = "get_weather",
-                            arguments = "{\"city\":\"Beijing\"}"
-                        }
+                        name = "get_weather",
+                        arguments = new { city = "Beijing" }
                     }
                 }
             };

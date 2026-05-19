@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace AGI.Api.Services;
 
@@ -30,9 +31,11 @@ public class RequestQueue
 public class OperatorReply
 {
     public string? Content { get; init; }
-    public string? ToolCallsJson { get; init; }
-    public bool IsToolCall => ToolCallsJson != null;
+    public List<ToolCallRequest>? ToolCalls { get; init; }
+    public bool IsToolCall => ToolCalls != null;
 }
+
+public record ToolCallRequest(string Id, string Name, JsonElement Arguments);
 
 public class PendingRequest
 {

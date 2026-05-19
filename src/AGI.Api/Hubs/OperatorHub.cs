@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AGI.Api.Services;
 using Microsoft.AspNetCore.SignalR;
 
@@ -24,9 +25,19 @@ public class OperatorHub : Hub
     public void ReplyWithToolCalls(string requestId, string toolCallsJson)
     {
         var pending = _queue.Get(requestId);
-        if (pending != null)
+        if (pending == null) return;
+
+        var doc = JsonDocument.Parse(toolCallsJson);
+        var toolCalls = new List<ToolCallRequest>();
+        foreach (var tc in doc.RootElement.GetProperty("tool_calls").EnumerateArray())
         {
-            pending.Completion.TrySetResult(new OperatorReply { ToolCallsJson = toolCallsJson });
+            toolCalls.Add(new ToolCallRequest(
+                tc.GetProperty("id").GetString()!,
+                tc.GetProperty("name").GetString()!,
+                tc.GetProperty("arguments").Clone()
+            ));
         }
+
+        pending.Completion.TrySetResult(new OperatorReply { ToolCalls = toolCalls });
     }
 }

@@ -58,7 +58,17 @@ public static class AsyncEndpoints
             object result;
             if (reply.IsToolCall)
             {
-                var toolCalls = JsonSerializer.Deserialize<JsonElement>(reply.ToolCallsJson!);
+                var toolCalls = reply.ToolCalls!.Select(tc => new
+                {
+                    id = tc.Id,
+                    type = "function",
+                    function = new
+                    {
+                        name = tc.Name,
+                        arguments = JsonSerializer.Serialize(tc.Arguments)
+                    }
+                }).ToArray();
+
                 result = new
                 {
                     id = taskId,
@@ -70,7 +80,7 @@ public static class AsyncEndpoints
                         new
                         {
                             index = 0,
-                            message = new { role = "assistant", content = (string?)null, tool_calls = toolCalls.GetProperty("tool_calls") },
+                            message = new { role = "assistant", content = (string?)null, tool_calls = toolCalls },
                             finish_reason = "tool_calls"
                         }
                     }

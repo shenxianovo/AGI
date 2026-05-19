@@ -44,6 +44,30 @@ public static class AnthropicMessagesEndpoint
         queue.Remove(id);
 
         var inputTokens = EstimateInputTokens(body);
+
+        if (reply.IsToolCall)
+        {
+            var contentBlocks = reply.ToolCalls!.Select(tc => new
+            {
+                type = "tool_use",
+                id = tc.Id,
+                name = tc.Name,
+                input = tc.Arguments
+            }).ToArray();
+
+            return Results.Ok(new
+            {
+                id,
+                type = "message",
+                role = "assistant",
+                model,
+                content = contentBlocks,
+                stop_reason = "tool_use",
+                stop_sequence = (string?)null,
+                usage = new { input_tokens = inputTokens, output_tokens = 0 }
+            });
+        }
+
         var replyContent = reply.Content ?? "";
 
         return Results.Ok(new
