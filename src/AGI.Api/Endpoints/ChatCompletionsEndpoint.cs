@@ -33,7 +33,7 @@ public static class ChatCompletionsEndpoint
             messages = body.TryGetProperty("messages", out var msgs) ? msgs : default
         }));
 
-        var inputTokens = EstimateInputTokens(body);
+        var inputTokens = TokenEstimator.EstimateInputTokens(body);
 
         if (!stream)
         {
@@ -200,19 +200,5 @@ public static class ChatCompletionsEndpoint
         await context.Response.Body.FlushAsync();
 
         return Results.Empty;
-    }
-
-    private static int EstimateInputTokens(JsonElement body)
-    {
-        var length = 0;
-        if (body.TryGetProperty("messages", out var messages))
-        {
-            foreach (var msg in messages.EnumerateArray())
-            {
-                if (msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String)
-                    length += c.GetString()?.Length ?? 0;
-            }
-        }
-        return length;
     }
 }

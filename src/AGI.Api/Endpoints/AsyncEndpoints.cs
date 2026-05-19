@@ -57,7 +57,7 @@ public static class AsyncEndpoints
             {
                 if (body.TryGetProperty("model", out var m))
                     model = m.GetString();
-                inputTokens = EstimateInputTokens(body);
+                inputTokens = TokenEstimator.EstimateInputTokens(body);
             }
 
             object result;
@@ -121,20 +121,6 @@ public static class AsyncEndpoints
         }
 
         return Results.Ok(new { status = "pending" });
-    }
-
-    private static int EstimateInputTokens(JsonElement body)
-    {
-        var length = 0;
-        if (body.TryGetProperty("messages", out var messages))
-        {
-            foreach (var msg in messages.EnumerateArray())
-            {
-                if (msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String)
-                    length += c.GetString()?.Length ?? 0;
-            }
-        }
-        return length;
     }
 }
 

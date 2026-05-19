@@ -44,7 +44,7 @@ public static class AnthropicMessagesEndpoint
         var reply = await pending.Completion.Task;
         queue.Remove(id);
 
-        var inputTokens = EstimateInputTokens(body);
+        var inputTokens = TokenEstimator.EstimateInputTokens(body);
 
         if (reply.IsToolCall)
         {
@@ -128,7 +128,7 @@ public static class AnthropicMessagesEndpoint
         cts.Cancel();
         await heartbeatTask;
 
-        var inputTokens = EstimateInputTokens((JsonElement)pending.RequestData);
+        var inputTokens = TokenEstimator.EstimateInputTokens((JsonElement)pending.RequestData);
 
         if (reply.IsToolCall)
         {
@@ -216,19 +216,5 @@ public static class AnthropicMessagesEndpoint
         var json = JsonSerializer.Serialize(data, opts);
         await context.Response.WriteAsync($"event: {eventType}\ndata: {json}\n\n");
         await context.Response.Body.FlushAsync();
-    }
-
-    private static int EstimateInputTokens(JsonElement body)
-    {
-        var length = 0;
-        if (body.TryGetProperty("messages", out var messages))
-        {
-            foreach (var msg in messages.EnumerateArray())
-            {
-                if (msg.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String)
-                    length += c.GetString()?.Length ?? 0;
-            }
-        }
-        return length;
     }
 }
