@@ -108,13 +108,6 @@ public static class AnthropicMessagesEndpoint
             }
         }, jsonOpts);
 
-        await WriteEventAsync(context, "content_block_start", new
-        {
-            type = "content_block_start",
-            index = 0,
-            content_block = new { type = "text", text = "" }
-        }, jsonOpts);
-
         using var cts = new CancellationTokenSource();
         var heartbeatTask = Task.Run(async () =>
         {
@@ -130,6 +123,53 @@ public static class AnthropicMessagesEndpoint
         queue.Remove(id);
         cts.Cancel();
         await heartbeatTask;
+
+        if (reply.IsToolCall)
+        {
+            var toolCall = reply.ToolCalls![0];
+
+            await WriteEventAsync(context, "content_block_start", new
+            {
+                type = "content_block_start",
+                index = 0,
+                content_block = new { type = "tool_use", id = toolCall.Id, name = toolCall.Name }
+            }, jsonOpts);
+
+            var inputJson = JsonSerializer.Serialize(toolCall.Arguments);
+            foreach (var ch in inputJson)
+            {
+                await WriteEventAsync(context, "content_block_delta", new
+                {
+                    type = "content_block_delta",
+                    index = 0,
+                    delta = new { type = "input_json_delta", partial_json = ch.ToString() }
+                }, jsonOpts);
+            }
+
+            await WriteEventAsync(context, "content_block_stop", new
+            {
+                type = "content_block_stop",
+                index = 0
+            }, jsonOpts);
+
+            await WriteEventAsync(context, "message_delta", new
+            {
+                type = "message_delta",
+                delta = new { stop_reason = "tool_use", stop_sequence = (string?)null },
+                usage = new { output_tokens = 0 }
+            }, jsonOpts);
+
+            await WriteEventAsync(context, "message_stop", new { type = "message_stop" }, jsonOpts);
+
+            return Results.Empty;
+        }
+
+        await WriteEventAsync(context, "content_block_start", new
+        {
+            type = "content_block_start",
+            index = 0,
+            content_block = new { type = "text", text = "" }
+        }, jsonOpts);
 
         var replyContent = reply.Content ?? "";
 

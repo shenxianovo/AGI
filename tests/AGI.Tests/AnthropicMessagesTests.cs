@@ -133,4 +133,90 @@ public class AnthropicMessagesTests : IClassFixture<TestWebAppFactory>
 
         await hubConnection.DisposeAsync();
     }
+
+    [Fact]
+    public async Task PostMessages_WithToolCall_Streaming_ReturnsToolUseContentBlock()
+    {
+        var server = _factory.Server;
+        var client = _factory.CreateClient();
+
+        var hubConnection = new HubConnectionBuilder()
+            .WithUrl(
+                new Uri(server.BaseAddress, "/hubs/operator"),
+                opts => opts.HttpMessageHandlerFactory = _ => server.CreateHandler())
+            .Build();
+
+        hubConnection.On<JsonElement>("NewRequest", async request =>
+        {
+            var id = request.GetProperty("id").GetString();
+            var toolCall = new
+            {
+                tool_calls = new[]
+                {
+                    new
+                    {
+                        id = "toolu_02",
+                        name = "search",
+                        arguments = new { query = "test" }
+                    }
+                }
+            };
+            await hubConnection.InvokeAsync("ReplyWithToolCalls", id, JsonSerializer.Serialize(toolCall));
+        });
+
+        await hubConnection.StartAsync();
+
+        var requestBody = new
+        {
+            model = "quq-1.0",
+            max_tokens = 1024,
+            stream = true,
+            messages = new[] { new { role = "user", content = "Search for test" } },
+            tools = new[]
+            {
+                new
+                {
+                    name = "search",
+                    description = "Search for information",
+                    input_schema = new { type = "object", properties = new { query = new { type = "string" } } }
+                }
+            }
+        };
+
+        var response = await client.PostAsync("/v1/messages", JsonContent.Create(requestBody));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var stream = await response.Content.ReadAsStreamAsync();
+        var reader = new StreamReader(stream);
+
+        var events = new List<(string eventType, JsonElement data)>();
+        while (!reader.EndOfStream)
+        {
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.StartsWith("event: "))
+            {
+                var eventType = line.Substring(7);
+                var dataLine = await reader.ReadLineAsync();
+                if (dataLine?.StartsWith("data: ") == true)
+                {
+                    var json = JsonSerializer.Deserialize<JsonElement>(dataLine.Substring(6));
+                    events.Add((eventType, json));
+                }
+            }
+        }
+
+        Assert.Contains(events, e => e.eventType == "message_start");
+        Assert.Contains(events, e => e.eventType == "content_block_start" &&
+            e.data.GetProperty("content_block").GetProperty("type").GetString() == "tool_use");
+        Assert.Contains(events, e => e.eventType == "content_block_delta" &&
+            e.data.GetProperty("delta").GetProperty("type").GetString() == "input_json_delta");
+        Assert.Contains(events, e => e.eventType == "content_block_stop");
+        Assert.Contains(events, e => e.eventType == "message_delta" &&
+            e.data.GetProperty("delta").GetProperty("stop_reason").GetString() == "tool_use");
+        Assert.Contains(events, e => e.eventType == "message_stop");
+
+        await hubConnection.DisposeAsync();
+    }
 }
