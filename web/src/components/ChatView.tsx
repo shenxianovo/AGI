@@ -14,12 +14,11 @@ export default function ChatView({ request, onReply, onReplyWithToolCalls }: Pro
   const [toolJson, setToolJson] = useState(
     JSON.stringify(
       {
-        type: "tool_calls",
         tool_calls: [
           {
             id: "call_1",
-            type: "function",
-            function: { name: "", arguments: "{}" },
+            name: "",
+            arguments: {},
           },
         ],
       },
