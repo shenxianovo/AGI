@@ -13,6 +13,9 @@ export default defineConfig({
       "/v1": {
         target: "http://localhost:5096",
       },
+      "/api": {
+        target: "http://localhost:5096",
+      },
     },
   },
 })

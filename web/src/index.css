@@ -8,17 +8,17 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   background: #1a1a2e;
   color: #e0e0e0;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 #root {
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .app {
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -190,3 +190,122 @@ body {
 .send-btn:hover {
   background: #3a8eef;
 }
+
+/* Status Dashboard */
+.status-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.status-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.status-header h1 {
+  font-size: 36px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.status-subtitle {
+  font-size: 18px;
+  color: #888;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.status-card {
+  background: #16162a;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.status-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.status-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.status-value.online {
+  color: #4ade80;
+}
+
+.status-value.offline {
+  color: #f87171;
+}
+
+.status-info {
+  background: #16162a;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.status-info h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+.status-info h3 {
+  font-size: 16px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: #ccc;
+}
+
+.status-code {
+  display: block;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
+  font-size: 14px;
+  color: #4ade80;
+  margin-bottom: 24px;
+  word-break: break-all;
+}
+
+.status-pre {
+  background: #1a1a2e;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 16px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
+  font-size: 13px;
+  color: #e0e0e0;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+.status-usage {
+  margin-top: 32px;
+}
+
+.status-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 18px;
+  color: #888;
+}
+
